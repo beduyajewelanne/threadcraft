@@ -1,0 +1,247 @@
+:root {
+    --bg-warm-linen: #F6F4EE;
+    --surface-dark-slate: #1E232A;
+    --accent-terracotta: #E06D53;
+    --accent-raw-canvas: #EFEAE1;
+    --canvas-white: #FFFFFF;
+    --text-charcoal: #181A1D;
+    --text-warm-milk: #FDFBF7;
+    --font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-warm-linen);
+    font-family: var(--font-family);
+    color: var(--text-charcoal);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 16px;
+}
+
+.auth-container {
+    display: flex;
+    flex-direction: row;
+    background-color: var(--surface-dark-slate);
+    border-radius: 16px;
+    overflow: hidden;
+    width: 100%;
+    max-width: 900px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.promo-panel {
+    flex: 1;
+    background-color: var(--canvas-white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.promo-panel img {
+    width: 100%;
+    height: 100%;
+    max-height: 400px;
+    object-fit: cover;
+}
+
+.form-panel {
+    flex: 1;
+    padding: 32px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    color: var(--text-warm-milk);
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.brand img {
+    height: 36px;
+    width: auto;
+}
+
+.form-content h2 {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--text-warm-milk);
+}
+
+.form-content .subtitle {
+    font-size: 12px;
+    color: #A0A5AD;
+    margin-bottom: 24px;
+    line-height: 1.4;
+}
+
+.input-group {
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+}
+
+.input-group label {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 6px;
+    color: var(--text-warm-milk);
+}
+
+.input-group input {
+    width: 100%;
+    padding: 12px 16px;
+    background-color: var(--accent-raw-canvas);
+    border: 2px solid transparent;
+    border-radius: 24px;
+    font-size: 14px;
+    font-family: var(--font-family);
+    color: var(--text-charcoal);
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.input-group input:focus {
+    border-color: var(--accent-terracotta);
+}
+
+.password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 12px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 4px;
+}
+
+.password-toggle img {
+    width: 20px;
+    height: 20px;
+}
+
+/* Links & Buttons */
+.forgot {
+    text-align: right;
+    margin-bottom: 20px;
+}
+
+.forgot a {
+    font-size: 12px;
+    color: var(--accent-terracotta);
+    text-decoration: none;
+}
+
+.login-btn {
+    width: 100%;
+    padding: 12px;
+    background-color: var(--accent-terracotta);
+    color: var(--text-warm-milk);
+    border: none;
+    border-radius: 24px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.login-btn:hover {
+    background-color: #c85a42;
+}
+
+/* Social Buttons & Divider */
+.divider {
+    display: flex;
+    align-items: center;
+    margin: 20px 0;
+}
+
+.divider span {
+    flex: 1;
+    height: 1px;
+    background-color: #343A40;
+}
+
+.divider p {
+    font-size: 12px;
+    color: #888;
+    margin: 0 12px;
+}
+
+.social-buttons {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.social-btn {
+    flex: 1;
+    padding: 10px;
+    background-color: var(--accent-raw-canvas);
+    border: none;
+    border-radius: 24px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-charcoal);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.account-text {
+    font-size: 12px;
+    text-align: center;
+    color: #A0A5AD;
+}
+
+.account-text a {
+    color: var(--accent-terracotta);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 12px;
+    }
+
+    .auth-container {
+        flex-direction: column;
+        max-width: 100%;
+        border-radius: 16px;
+    }
+
+    .promo-panel {
+        display: none;
+    }
+
+    .form-panel {
+        padding: 24px 20px;
+        width: 100%;
+    }
+
+    .form-content h2 {
+        font-size: 20px;
+    }
+}

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ThreadCraft - Login</title>
+    <link rel="stylesheet" href="../css/auth.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="auth-container">
+        <div class="promo-panel">
+            <img src="../image/leftimage.png" alt="ThreadCraft Design Studio Showcase">
+        </div>
+
+        <div class="form-panel">
+            <div class="brand">
+                <img src="../image/ThreadCraft (Logo).svg" alt="ThreadCraft Logo">
+            </div>
+
+            <div class="form-content">
+                <h2>Welcome Back</h2>
+                <p class="subtitle">Please login to your account to save and manage your apparel designs</p>
+
+                <form id="loginForm">
+                    <div class="input-group">
+                        <label for="email">Email address</label>
+                        <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                    </div>
+
+                    <div class="input-group password-input">
+                        <label for="password">Password</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                            <button type="button" class="password-toggle" id="passwordToggle" aria-label="Toggle password visibility">
+                                <img src="../image/eye.png" alt="Show password" id="passwordIcon">
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="forgot">
+                        <a href="#">Forgot password?</a>
+                    </div>
+
+                    <button type="submit" class="login-btn">Login</button>
+                </form>
+
+                <div class="divider">
+                    <span></span>
+                    <p>Or Login with</p>
+                    <span></span>
+                </div>
+
+                <div class="social-buttons">
+                    <button type="button" class="social-btn">
+                        <span class="google-icon">G</span> Google
+                    </button>
+                    <button type="button" class="social-btn">
+                        <span class="facebook-icon">f</span> Facebook
+                    </button>
+                </div>
+
+                <p class="account-text">Don't have an account? <a href="signup.html">Sign up</a></p>
+            </div>
+        </div>
+    </div>
+</body>
+<script src="../script/auth.js"></script>
+</html>
