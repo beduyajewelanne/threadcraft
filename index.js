@@ -1,4 +1,15 @@
 document.addEventListener("DOMContentLoaded", () => {
+    const currentUser = JSON.parse(localStorage.getItem("threadcraft_current_user"));
+    const isCustomerPage = document.body.classList.contains("customer-page");
+
+    if (isCustomerPage && !currentUser) {
+        window.location.href = "index.html";
+        return;
+    }
+    if (!isCustomerPage && currentUser) {
+        window.location.href = "customer.html";
+        return;
+    }
     const catalogView = document.getElementById("product-catalog");
     const customizationStudio = document.getElementById("customization-studio");
     const selectButtons = document.querySelectorAll(".select-product-btn");
@@ -411,61 +422,188 @@ document.addEventListener("DOMContentLoaded", () => {
             if (catalogView) catalogView.classList.remove("studio-hidden");
         });
     }
+    
+    const toastElem = document.getElementById("toast");
+    const cartBtn = document.getElementById("cart-btn");
+    const cartCount = document.getElementById("cart-count");
+    const logoutBtn = document.getElementById("logout-btn");
+    const welcomeText = document.getElementById("welcome-text");
+    const savedPanel = document.getElementById("saved-designs-panel");
+    const savedList = document.getElementById("saved-designs-list");
+    const closeSavedBtn = document.getElementById("close-saved-panel");
 
-    if (saveDesignBtn) {
-        saveDesignBtn.addEventListener("click", () => {
-            const designState = {
-                productType: currentProductType,
-                size: currentSize,
-                color: currentColor,
-                viewData: viewData,
-                drawingData: drawingCanvas ? drawingCanvas.toDataURL() : null
-            };
-            localStorage.setItem("threadcraft_saved_design", JSON.stringify(designState));
-            alert("Design saved successfully!");
-        });
+    const designsKey = currentUser ? "threadcraft_designs_" + currentUser.email : null;
+    let toastTimer;
+
+    const showToast = (message) => {
+        if (!toastElem) return;
+        toastElem.textContent = message;
+        toastElem.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+            toastElem.classList.remove("show");
+        }, 2500);
+    };
+
+    const getSavedDesigns = () => {
+        if (!designsKey) return [];
+        return JSON.parse(localStorage.getItem(designsKey)) || [];
+    };
+
+    const updateCartCount = () => {
+        if (cartCount) cartCount.textContent = getSavedDesigns().length;
+    };
+
+    const askLogin = (message) => {
+        showToast(message);
+        setTimeout(() => {
+            window.location.href = "Auth Index/login.html";
+        }, 1500);
+    };
+
+    if (welcomeText && currentUser) {
+        welcomeText.textContent = "Hi, " + currentUser.fullname.split(" ")[0];
     }
 
-    if (loadDesignBtn) {
-        loadDesignBtn.addEventListener("click", () => {
-            const saved = localStorage.getItem("threadcraft_saved_design");
-            if (!saved) {
-                alert("No saved design found.");
-                return;
-            }
-            const state = JSON.parse(saved);
-            currentProductType = state.productType;
-            currentSize = state.size;
-            currentColor = state.color;
-            viewData = state.viewData;
+    const openSavedDesign = (index) => {
+        const state = getSavedDesigns()[index];
+        if (!state) return;
 
-            sizeButtons.forEach(b => {
-                if (b.getAttribute("data-size") === currentSize) b.classList.add("active");
-                else b.classList.remove("active");
-            });
+        currentProductType = state.productType;
+        currentSize = state.size;
+        currentColor = state.color;
+        viewData = state.viewData;
+        currentIndex = 0;
 
-            colorButtons.forEach(b => {
-                if (b.getAttribute("data-color") === currentColor) b.style.borderColor = "#E06D53";
-                else b.style.borderColor = "transparent";
-            });
+        sizeButtons.forEach(b => {
+            if (b.getAttribute("data-size") === currentSize) b.classList.add("active");
+            else b.classList.remove("active");
+        });
 
-            if (state.drawingData && drawingCanvas && drawingCtx) {
+        colorButtons.forEach(b => {
+            if (b.getAttribute("data-color") === currentColor) b.style.borderColor = "#E06D53";
+            else b.style.borderColor = "transparent";
+        });
+
+        if (drawingCanvas && drawingCtx) {
+            drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+            if (state.drawingData) {
                 const img = new Image();
                 img.onload = () => {
-                    drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
                     drawingCtx.drawImage(img, 0, 0);
                     saveDrawingState();
                     syncDrawingToGarment();
                 };
                 img.src = state.drawingData;
+            } else {
+                saveDrawingState();
+                syncDrawingToGarment();
             }
+        }
 
-            currentIndex = 0;
-            applyGarmentStyles();
-            updatePriceDisplay();
-            alert("Design loaded successfully!");
+        if (catalogView) catalogView.classList.add("studio-hidden");
+        if (customizationStudio) customizationStudio.classList.remove("studio-hidden");
+        if (savedPanel) savedPanel.classList.add("studio-hidden");
+
+        applyGarmentStyles();
+        updatePriceDisplay();
+        showToast("Design loaded.");
+    };
+
+    const renderSavedDesigns = () => {
+        if (!savedList) return;
+        const designs = getSavedDesigns();
+
+        if (designs.length === 0) {
+            savedList.innerHTML = "<p>No saved designs yet.</p>";
+            return;
+        }
+
+        savedList.innerHTML = designs.map((d, index) => `
+            <div class="saved-item">
+                <div>
+                    <strong>${d.productType === "hoodie" ? "Pullover Hoodie" : "Classic T-Shirt"}</strong>
+                    <p>${d.size} • ${d.color} • ${d.price}</p>
+                </div>
+                <div class="saved-item-actions">
+                    <button type="button" class="saved-open-btn" data-index="${index}">Open</button>
+                    <button type="button" class="saved-delete-btn" data-index="${index}">Delete</button>
+                </div>
+            </div>
+        `).join("");
+
+        savedList.querySelectorAll(".saved-open-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                openSavedDesign(Number(btn.getAttribute("data-index")));
+            });
+        });
+
+        savedList.querySelectorAll(".saved-delete-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const list = getSavedDesigns();
+                list.splice(Number(btn.getAttribute("data-index")), 1);
+                localStorage.setItem(designsKey, JSON.stringify(list));
+                renderSavedDesigns();
+                updateCartCount();
+                showToast("Design deleted.");
+            });
+        });
+    };
+
+    if (cartBtn && savedPanel) {
+        cartBtn.addEventListener("click", () => {
+            renderSavedDesigns();
+            savedPanel.classList.toggle("studio-hidden");
         });
     }
+
+    if (closeSavedBtn && savedPanel) {
+        closeSavedBtn.addEventListener("click", () => {
+            savedPanel.classList.add("studio-hidden");
+        });
+    }
+
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", () => {
+            localStorage.removeItem("threadcraft_current_user");
+            window.location.href = "index.html";
+        });
+    }
+
+    if (saveDesignBtn) {
+        saveDesignBtn.addEventListener("click", () => {
+            if (!currentUser) {
+                askLogin("Please login first to save your design.");
+                return;
+            }
+
+            const designs = getSavedDesigns();
+            designs.push({
+                productType: currentProductType,
+                size: currentSize,
+                color: currentColor,
+                price: totalPriceElem.textContent,
+                viewData: viewData,
+                drawingData: drawingCanvas ? drawingCanvas.toDataURL() : null
+            });
+            localStorage.setItem(designsKey, JSON.stringify(designs));
+            updateCartCount();
+            showToast("Design saved! Check your cart.");
+        });
+    }
+
+    if (loadDesignBtn) {
+        loadDesignBtn.addEventListener("click", () => {
+            if (!currentUser) {
+                askLogin("Please login first to see your saved designs.");
+                return;
+            }
+            renderSavedDesigns();
+            savedPanel.classList.remove("studio-hidden");
+        });
+    }
+
+    updateCartCount();
 
     if (resetDesignBtn) {
         resetDesignBtn.addEventListener("click", () => {
@@ -502,7 +640,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             applyGarmentStyles();
             updatePriceDisplay();
-            alert("Design reset to default.");
+            showToast("Design reset to default.");
         });
     }
 
