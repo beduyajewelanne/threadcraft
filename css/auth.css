@@ -62,6 +62,26 @@ body {
     color: var(--text-warm-milk);
 }
 
+.back-btn {
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 16px;
+    background-color: #1E232A;
+    color: #FDFBF7;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 20px;
+    transition: background-color 0.2s;
+}
+
+.back-btn:hover {
+    background-color: #E06D53;
+}
+
 .brand {
     display: flex;
     align-items: center;

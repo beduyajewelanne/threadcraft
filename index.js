@@ -169,10 +169,14 @@ document.addEventListener("DOMContentLoaded", () => {
             'image/white t-shirt/white_t-shirt_left.png'
         ],
         hoodie: [
-            'image/hoodie/hoodie_front.png',
-            'image/hoodie/hoodie_right.png',
-            'image/hoodie/hoodie_back.png',
-            'image/hoodie/hoodie_left.png'
+            'image/white hoodie/white_hoodie_front.png',
+            'image/white hoodie/white_hoodie_front_right.png',
+            'image/white hoodie/white_hoodie_right.png',
+            'image/white hoodie/white_hoodie_back_right.png',
+            'image/white hoodie/white_hoodie_back.png',
+            'image/white hoodie/white_hoodie_back_left.png',
+            'image/white hoodie/white_hoodie_left.png',
+            'image/white hoodie/white_hoodie_front_left.png'
         ]
     };
 
@@ -181,19 +185,22 @@ document.addEventListener("DOMContentLoaded", () => {
     let currentSize = 'S';
     let currentColor = 'white';
     
-    let viewData = {
-        0: { text: '', position: 'center', y: 250, graphic: '' },
-        1: { text: '', position: 'center', y: 250, graphic: '' },
-        2: { text: '', position: 'center', y: 250, graphic: '' },
-        3: { text: '', position: 'center', y: 250, graphic: '' }
+    let viewData = {};
+    const initViewData = () => {
+        viewData = {};
+        const count = viewPaths[currentProductType].length;
+        for (let i = 0; i < count; i++) {
+            viewData[i] = { text: '', position: 'center', y: 250, graphic: '' };
+        }
     };
+    initViewData();
 
     const updatePriceDisplay = () => {
         const base = prices[currentProductType] || 350;
         const sizeAddon = sizePrices[currentSize] || 0;
         const colorAddon = colorPrices[currentColor] || 0;
         
-        let totalTextCharCount = Object.values(viewData).reduce((sum, v) => sum + v.text.trim().length, 0);
+        let totalTextCharCount = Object.values(viewData).reduce((sum, v) => sum + (v.text ? v.text.trim().length : 0), 0);
         const textAddon = totalTextCharCount > 0 ? 50.00 : 0.00;
 
         let hasAnyGraphic = Object.values(viewData).some(v => v.graphic !== '');
@@ -220,11 +227,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const getGarmentImagePath = () => {
         const views = viewPaths[currentProductType] || viewPaths['tshirt'];
-        return views[currentIndex];
+        return views[currentIndex] || views[0];
     };
 
     const syncUIWithCurrentView = () => {
-        const currentViewObj = viewData[currentIndex];
+        const currentViewObj = viewData[currentIndex] || { text: '', position: 'center', y: 250, graphic: '' };
 
         if (customTextInput) {
             customTextInput.value = currentViewObj.text;
@@ -237,7 +244,7 @@ document.addEventListener("DOMContentLoaded", () => {
             textPositionSelect.value = currentViewObj.position;
         }
         if (summaryText) {
-            summaryText.textContent = currentViewObj.text.trim() === "" ? "None" : currentViewObj.text;
+            summaryText.textContent = !currentViewObj.text || currentViewObj.text.trim() === "" ? "None" : currentViewObj.text;
         }
 
         if (graphicPreview) {
@@ -245,7 +252,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 let path = '';
                 if (currentViewObj.graphic === 'design_1') path = 'image/graphic/graphic_design_1.png';
                 else if (currentViewObj.graphic === 'design_2') path = 'image/graphic/graphic_design_2.png';
-                else if (currentViewObj.graphic === 'design_3') path = 'image/graphic/graphic_design_3.png';
+                else if (currentViewObj.graphic === 'design_3') path = 'image/graphic/futuristic Sneakers.png';
 
                 graphicPreview.setAttributeNS("http://www.w3.org/1999/xlink", "href", path);
                 graphicPreview.setAttribute("href", path);
@@ -278,13 +285,7 @@ document.addEventListener("DOMContentLoaded", () => {
         btn.addEventListener("click", () => {
             currentProductType = btn.getAttribute("data-type");
             currentIndex = 0;
-            
-            viewData = {
-                0: { text: '', position: 'center', y: 250, graphic: '' },
-                1: { text: '', position: 'center', y: 250, graphic: '' },
-                2: { text: '', position: 'center', y: 250, graphic: '' },
-                3: { text: '', position: 'center', y: 250, graphic: '' }
-            };
+            initViewData();
 
             if (catalogView) catalogView.classList.add("studio-hidden");
             if (customizationStudio) customizationStudio.classList.remove("studio-hidden");
@@ -331,6 +332,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (customTextInput) {
         customTextInput.addEventListener("input", (e) => {
             const textVal = e.target.value;
+            if (!viewData[currentIndex]) viewData[currentIndex] = { text: '', position: 'center', y: 250, graphic: '' };
             viewData[currentIndex].text = textVal;
             if (customTextPreview) customTextPreview.textContent = textVal;
             if (summaryText) summaryText.textContent = textVal.trim() === "" ? "None" : textVal;
@@ -341,6 +343,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (textPositionSelect && customTextPreview) {
         textPositionSelect.addEventListener("change", (e) => {
             const pos = e.target.value;
+            if (!viewData[currentIndex]) viewData[currentIndex] = { text: '', position: 'center', y: 250, graphic: '' };
             viewData[currentIndex].position = pos;
             let yVal = 250;
             if (pos === "top") yVal = 150;
@@ -355,6 +358,7 @@ document.addEventListener("DOMContentLoaded", () => {
         btn.addEventListener("click", () => {
             const graphicType = btn.getAttribute("data-graphic");
             if (graphicType) {
+                if (!viewData[currentIndex]) viewData[currentIndex] = { text: '', position: 'center', y: 250, graphic: '' };
                 viewData[currentIndex].graphic = graphicType;
                 
                 graphicButtons.forEach(b => {
@@ -368,7 +372,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     let path = '';
                     if (graphicType === 'design_1') path = 'image/graphic/graphic_design_1.png';
                     else if (graphicType === 'design_2') path = 'image/graphic/graphic_design_2.png';
-                    else if (graphicType === 'design_3') path = 'image/graphic/graphic_design_3.png';
+                    else if (graphicType === 'design_3') path = 'image/graphic/futuristic Sneakers.png';
                     
                     graphicPreview.setAttributeNS("http://www.w3.org/1999/xlink", "href", path);
                     graphicPreview.setAttribute("href", path);
@@ -381,7 +385,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (removeGraphicBtn) {
         removeGraphicBtn.addEventListener("click", () => {
-            viewData[currentIndex].graphic = '';
+            if (viewData[currentIndex]) viewData[currentIndex].graphic = '';
 
             graphicButtons.forEach(b => {
                 b.classList.remove("active");
@@ -437,7 +441,7 @@ document.addEventListener("DOMContentLoaded", () => {
             currentProductType = state.productType;
             currentSize = state.size;
             currentColor = state.color;
-            viewData = state.viewData;
+            viewData = state.viewData || {};
 
             sizeButtons.forEach(b => {
                 if (b.getAttribute("data-size") === currentSize) b.classList.add("active");
@@ -472,12 +476,7 @@ document.addEventListener("DOMContentLoaded", () => {
             currentSize = 'S';
             currentColor = 'white';
             currentIndex = 0;
-            viewData = {
-                0: { text: '', position: 'center', y: 250, graphic: '' },
-                1: { text: '', position: 'center', y: 250, graphic: '' },
-                2: { text: '', position: 'center', y: 250, graphic: '' },
-                3: { text: '', position: 'center', y: 250, graphic: '' }
-            };
+            initViewData();
 
             if (drawingCanvas && drawingCtx) {
                 drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
