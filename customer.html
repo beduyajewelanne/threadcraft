@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ThreadCraft - Custom Apparel Studio</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body class="customer-page">
+    <header>
+        <div class="header-logo">
+            <img src="image/ThreadCraft (Logo).svg" alt="ThreadCraft Logo">
+            <div>
+                <h1>ThreadCraft</h1>
+                <p>Interactive Custom Apparel Studio</p>
+            </div>
+        </div>
+
+        <div class="header-auth-buttons">
+            <span id="welcome-text" class="welcome-text"></span>
+             <button type="button" id="cart-btn" class="cart-btn" aria-label="Saved designs">🛒 <span id="cart-count">0</span></button>
+             <button type="button" id="logout-btn" class="logout-btn">Logout</button>
+            </div>
+    </header>
+
+    <main id="studio">
+        <section id="product-catalog" class="catalog-view">
+            <div class="catalog-hero-preview">
+                <div class="hero-image-box">
+                    <img src="image/leftimage.png" alt="Custom Clothes Showcase" id="catalog-hero-img">
+                </div>
+                <h3>Custom Apparel Studio</h3>
+                <p>Design your unique style with custom prints, text, and freehand drawing.</p>
+            </div>
+
+            <div class="catalog-grid-container">
+                <div class="product-grid">
+                    <div class="product-card" data-product="tshirt">
+                        <div class="product-img-wrapper">
+                            <img src="image/product/2D_product_plain_white_tshirt.png" alt="Classic T-Shirt">
+                        </div>
+                        <div class="product-info">
+                            <h3>Classic T-Shirt</h3>
+                            <p class="product-price">₱350.00</p>
+                            <button type="button" class="select-product-btn" data-type="tshirt">Customize</button>
+                        </div>
+                    </div>
+                    
+                    <div class="product-card" data-product="hoodie">
+                        <div class="product-img-wrapper">
+                            <img src="image/product/2D_product_plain_white_hoodie.png" alt="Pullover Hoodie">
+                        </div>
+                        <div class="product-info">
+                            <h3>Pullover Hoodie</h3>
+                            <p class="product-price">₱650.00</p>
+                            <button type="button" class="select-product-btn" data-type="hoodie">Customize</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div id="customization-studio" class="studio-hidden">
+            <section id="preview-section">
+                <div id="preview-header">
+                    <button type="button" id="back-to-catalog">← Back</button>
+                    <h2>Apparel Preview</h2>
+                </div>
+
+                <div id="garment-viewer">
+                    <div id="garment-stage">
+                        <svg id="garment-svg" width="350" height="420" viewBox="0 0 400 500" role="img" aria-label="Custom apparel preview">
+                            <image id="garment-base" href="image/white t-shirt/white_t-shirt_front.png" x="0" y="0" width="400" height="500" preserveAspectRatio="xMidYMid meet"></image>
+                            <g id="design-layer">
+                                <text id="custom-text-preview" x="200" y="250" text-anchor="middle"> </text>
+                                <image id="graphic-preview" x="125" y="175" width="150" height="150"> </image>
+                                <image id="drawing-preview" x="100" y="150" width="200" height="200" preserveAspectRatio="xMidYMid meet"></image>
+                            </g>
+                        </svg>
+                        <canvas id="drawing-overlay" width="350" height="420"> </canvas>
+                        
+                        <div id="rotation-controls">
+                            <button type="button" id="rotate-btn" title="Rotate View">
+                                <img src="image/rotate.png" alt="Rotate" width="28" height="28">
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="price-display">
+                    <p>Current Price:</p>
+                    <strong id="current-price">₱350.00</strong>
+                </div>
+            </section>
+
+            <section id="customize">
+                <h2>Customize Your Apparel</h2>
+
+                <section id="size-selector">
+                    <h3>1. Choose Size</h3>
+                    <div class="size-options">
+                        <button type="button" class="size-card-btn active" data-size="S"><span>S</span></button>
+                        <button type="button" class="size-card-btn" data-size="M"><span>M</span></button>
+                        <button type="button" class="size-card-btn" data-size="L"><span>L</span></button>
+                        <button type="button" class="size-card-btn" data-size="XL"><span>XL</span></button>
+                        <button type="button" class="size-card-btn" data-size="2XL"><span>2XL</span></button>
+                    </div>
+                    <input type="hidden" name="size" id="selected-size" value="S">
+                </section>
+
+                <section id="color-selector">
+                    <h3>2. Choose Fabric Color</h3>
+                    <div id="color-palette">
+                        <button type="button" class="color-option" data-color="black">Black</button>
+                        <button type="button" class="color-option" data-color="white">White</button>
+                        <button type="button" class="color-option" data-color="red">Red</button>
+                        <button type="button" class="color-option" data-color="blue">Blue</button>
+                        <button type="button" class="color-option" data-color="green">Green</button>
+                        <button type="button" class="color-option" data-color="yellow">Yellow</button>
+                        <button type="button" class="color-option" data-color="purple">Purple</button>
+                    </div>
+                </section>
+
+                <section id="text-customization">
+                    <h3>3. Add Custom Text</h3>
+                    <label for="custom-text">Enter your text:</label>
+                    <input type="text" id="custom-text" name="custom-text" placeholder="Enter your design text" maxlength="30">
+                    <label for="text-position">Text Position:</label>
+                    <select id="text-position">
+                        <option value="center">Center</option>
+                        <option value="top">Top</option>
+                        <option value="bottom">Bottom</option>
+                    </select>
+                </section>
+
+                <section id="graphic-selector">
+                    <h3>4. Add Graphic</h3>
+                    <div class="graphic-cards-container">
+                        <button type="button" class="graphic-option pattern-card-btn" data-graphic="design_1">
+                            <img src="image/graphic/graphic_design_1.png" alt="Design 1">
+                            <span>Design 1</span>
+                        </button>
+                        <button type="button" class="graphic-option pattern-card-btn" data-graphic="design_2">
+                            <img src="image/graphic/graphic_design_2.png" alt="Design 2">
+                            <span>Design 2</span>
+                        </button>
+                        <button type="button" class="graphic-option pattern-card-btn" data-graphic="design_3">
+                            <img src="image/graphic/graphic_design_3.png" alt="Design 3">
+                            <span>Design 3</span>
+                        </button>
+                    </div>
+                    <button type="button" id="remove-graphic">Remove Graphic</button>
+                </section>
+
+                <section id="drawing">
+                    <h3>5. Freehand Drawing Studio</h3>
+                    <div id="drawing-tools">
+                        <label for="brush-size">Brush Size:</label>
+                        <input type="range" id="brush-size" min="1" max="30" value="5">
+                        <button type="button" id="clear-drawing">Clear</button>
+                        <button type="button" id="undo-drawing">Undo</button>
+                    </div>
+                    <canvas id="drawing-canvas" width="350" height="200"></canvas>
+                </section>
+
+                <section id="pricing">
+                    <h3>6. Price Breakdown</h3>
+                    <div id="price-breakdown">
+                        <p>Base Apparel: <span id="base-price">₱350.00</span></p>
+                        <p>Size: <span id="size-price">₱0.00</span></p>
+                        <p>Color: <span id="color-price">₱0.00</span></p>
+                        <p>Custom Text: <span id="text-price">₱0.00</span></p>
+                        <p>Graphic Print: <span id="graphic-price">₱0.00</span></p>
+                        <hr>
+                        <p><strong>Total: <span id="total-price">₱350.00</span></strong></p>
+                    </div>
+                </section>
+
+                <section id="configuration">
+                    <h3>7. Design Configuration</h3>
+                    <button type="button" id="save-design">Save Design</button>
+                    <button type="button" id="load-design">Load Saved Design</button>
+                    <button type="button" id="reset-design">Reset Design</button>
+                </section>
+            </section>
+        </div>
+    </main>
+
+    <div id="saved-designs-panel" class="studio-hidden">
+        <div class="saved-panel-header">
+            <h3>My Saved Designs</h3>
+            <button type="button" id="close-saved-panel" aria-label="Close">✕</button>
+        </div>
+        <div id="saved-designs-list"></div>
+    </div>
+    <div id="toast"></div>
+    <footer id="accessibility">
+        <h2>Accessibility & Fallback</h2>
+        <p>ThreadCraft uses interactive visual controls to make apparel customization easier and more accessible.</p>
+    </footer>
+</body>
+<script src="index.js"></script>
+</html>
