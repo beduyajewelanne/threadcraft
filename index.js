@@ -10,6 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
         window.location.href = "customer.html";
         return;
     }
+
     const catalogView = document.getElementById("product-catalog");
     const customizationStudio = document.getElementById("customization-studio");
     const selectButtons = document.querySelectorAll(".select-product-btn");
@@ -66,6 +67,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const saveDesignBtn = document.getElementById("save-design");
     const loadDesignBtn = document.getElementById("load-design");
     const resetDesignBtn = document.getElementById("reset-design");
+    const savedPanel = document.getElementById("saved-panel");
+    const savedList = document.getElementById("saved-list");
+    const closeSavedBtn = document.getElementById("close-saved");
+    const cartBtn = document.getElementById("cart-btn");
+    const logoutBtn = document.getElementById("logout-btn");
+
+    const designsKey = currentUser ? `threadcraft_designs_${currentUser.email}` : "threadcraft_saved_design";
 
     let drawingHistory = [];
     let isDrawing = false;
@@ -292,6 +300,39 @@ document.addEventListener("DOMContentLoaded", () => {
         syncUIWithCurrentView();
     };
 
+    const getSavedDesigns = () => {
+        try {
+            return JSON.parse(localStorage.getItem(designsKey)) || [];
+        } catch {
+            return [];
+        }
+    };
+
+    const updateCartCount = () => {
+        const badge = document.getElementById("cart-count");
+        if (badge) {
+            badge.textContent = getSavedDesigns().length;
+        }
+    };
+
+    const showToast = (message) => {
+        let toast = document.getElementById("toast-notification");
+        if (!toast) {
+            toast = document.createElement("div");
+            toast.id = "toast-notification";
+            toast.style.cssText = "position:fixed; bottom:20px; right:20px; background:#1E232A; color:#FDFBF7; padding:12px 24px; border-radius:8px; z-index:9999; font-weight:600; box-shadow:0 4px 12px rgba(0,0,0,0.15);";
+            document.body.appendChild(toast);
+        }
+        toast.textContent = message;
+        toast.style.display = "block";
+        setTimeout(() => { toast.style.display = "none"; }, 3000);
+    };
+
+    const askLogin = (msg) => {
+        alert(msg);
+        window.location.href = "login.html";
+    };
+
     selectButtons.forEach(btn => {
         btn.addEventListener("click", () => {
             currentProductType = btn.getAttribute("data-type");
@@ -427,32 +468,15 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    if (saveDesignBtn) {
-        saveDesignBtn.addEventListener("click", () => {
-            const designState = {
-                productType: currentProductType,
-                size: currentSize,
-                color: currentColor,
-                viewData: viewData,
-                drawingData: drawingCanvas ? drawingCanvas.toDataURL() : null
-            };
-            localStorage.setItem("threadcraft_saved_design", JSON.stringify(designState));
-            alert("Design saved successfully!");
-        });
-    }
+    const openSavedDesign = (index) => {
+        const designs = getSavedDesigns();
+        const state = designs[index];
+        if (!state) return;
 
-    if (loadDesignBtn) {
-        loadDesignBtn.addEventListener("click", () => {
-            const saved = localStorage.getItem("threadcraft_saved_design");
-            if (!saved) {
-                alert("No saved design found.");
-                return;
-            }
-            const state = JSON.parse(saved);
-            currentProductType = state.productType;
-            currentSize = state.size;
-            currentColor = state.color;
-            viewData = state.viewData;
+        currentProductType = state.productType;
+        currentSize = state.size;
+        currentColor = state.color;
+        viewData = state.viewData;
 
         sizeButtons.forEach(b => {
             if (b.getAttribute("data-size") === currentSize) b.classList.add("active");
@@ -484,6 +508,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (customizationStudio) customizationStudio.classList.remove("studio-hidden");
         if (savedPanel) savedPanel.classList.add("studio-hidden");
 
+        currentIndex = 0;
         applyGarmentStyles();
         updatePriceDisplay();
         showToast("Design loaded.");
@@ -502,7 +527,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="saved-item">
                 <div>
                     <strong>${d.productType === "hoodie" ? "Pullover Hoodie" : "Classic T-Shirt"}</strong>
-                    <p>${d.size} • ${d.color} • ${d.price}</p>
+                    <p>${d.size} | ${d.color} | ${d.price}</p>
                 </div>
                 <div class="saved-item-actions">
                     <button type="button" class="saved-open-btn" data-index="${index}">Open</button>
