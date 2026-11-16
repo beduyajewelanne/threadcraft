@@ -1,16 +1,4 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const currentUser = JSON.parse(localStorage.getItem("threadcraft_current_user"));
-    const isCustomerPage = document.body.classList.contains("customer-page");
-
-    if (isCustomerPage && !currentUser) {
-        window.location.href = "index.html";
-        return;
-    }
-    if (!isCustomerPage && currentUser) {
-        window.location.href = "customer.html";
-        return;
-    }
-
     const catalogView = document.getElementById("product-catalog");
     const customizationStudio = document.getElementById("customization-studio");
     const selectButtons = document.querySelectorAll(".select-product-btn");
@@ -71,9 +59,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const savedList = document.getElementById("saved-list");
     const closeSavedBtn = document.getElementById("close-saved");
     const cartBtn = document.getElementById("cart-btn");
-    const logoutBtn = document.getElementById("logout-btn");
 
-    const designsKey = currentUser ? `threadcraft_designs_${currentUser.email}` : "threadcraft_saved_design";
+    const designsKey = "threadcraft_guest_cart";
 
     let drawingHistory = [];
     let isDrawing = false;
@@ -271,7 +258,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 let path = '';
                 if (currentViewObj.graphic === 'design_1') path = 'image/graphic/graphic_design_1.png';
                 else if (currentViewObj.graphic === 'design_2') path = 'image/graphic/graphic_design_2.png';
-                else if (currentViewObj.graphic === 'design_3') path = 'image/graphic/futuristic Sneakers.png';
+                else if (currentViewObj.graphic === 'design_3') path = 'image/graphic/Futuristic Sneakers.png';
 
                 graphicPreview.setAttributeNS("http://www.w3.org/1999/xlink", "href", path);
                 graphicPreview.setAttribute("href", path);
@@ -316,21 +303,20 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     const showToast = (message) => {
-        let toast = document.getElementById("toast-notification");
+        let toast = document.getElementById("toast");
         if (!toast) {
             toast = document.createElement("div");
-            toast.id = "toast-notification";
-            toast.style.cssText = "position:fixed; bottom:20px; right:20px; background:#1E232A; color:#FDFBF7; padding:12px 24px; border-radius:8px; z-index:9999; font-weight:600; box-shadow:0 4px 12px rgba(0,0,0,0.15);";
+            toast.id = "toast";
             document.body.appendChild(toast);
         }
+        toast.style.cssText = "position:fixed; bottom:30px; right:30px; background:#E06D53; color:#FDFBF7; padding:14px 24px; border-radius:8px; z-index:9999; font-weight:600; font-size:15px; box-shadow:0 6px 16px rgba(0,0,0,0.2); transition:opacity 0.3s ease;";
         toast.textContent = message;
         toast.style.display = "block";
-        setTimeout(() => { toast.style.display = "none"; }, 3000);
-    };
-
-    const askLogin = (msg) => {
-        alert(msg);
-        window.location.href = "login.html";
+        toast.style.opacity = "1";
+        setTimeout(() => {
+            toast.style.opacity = "0";
+            setTimeout(() => { toast.style.display = "none"; }, 300);
+        }, 3500);
     };
 
     selectButtons.forEach(btn => {
@@ -424,7 +410,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     let path = '';
                     if (graphicType === 'design_1') path = 'image/graphic/graphic_design_1.png';
                     else if (graphicType === 'design_2') path = 'image/graphic/graphic_design_2.png';
-                    else if (graphicType === 'design_3') path = 'image/graphic/futuristic Sneakers.png';
+                    else if (graphicType === 'design_3') path = 'image/graphic/Futuristic Sneakers.png';
                     
                     graphicPreview.setAttributeNS("http://www.w3.org/1999/xlink", "href", path);
                     graphicPreview.setAttribute("href", path);
@@ -519,19 +505,19 @@ document.addEventListener("DOMContentLoaded", () => {
         const designs = getSavedDesigns();
 
         if (designs.length === 0) {
-            savedList.innerHTML = "<p>No saved designs yet.</p>";
+            savedList.innerHTML = "<p>No saved designs in cart yet.</p>";
             return;
         }
 
         savedList.innerHTML = designs.map((d, index) => `
-            <div class="saved-item">
+            <div class="saved-item" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid #ddd; padding-bottom:8px;">
                 <div>
                     <strong>${d.productType === "hoodie" ? "Pullover Hoodie" : "Classic T-Shirt"}</strong>
-                    <p>${d.size} | ${d.color} | ${d.price}</p>
+                    <p style="margin:4px 0; font-size:14px;">Size: ${d.size} | Color: ${d.color} | <strong>${d.price}</strong></p>
                 </div>
                 <div class="saved-item-actions">
-                    <button type="button" class="saved-open-btn" data-index="${index}">Open</button>
-                    <button type="button" class="saved-delete-btn" data-index="${index}">Delete</button>
+                    <button type="button" class="saved-open-btn" data-index="${index}" style="margin-right:4px; padding:4px 8px;">Open</button>
+                    <button type="button" class="saved-delete-btn" data-index="${index}" style="padding:4px 8px; background:#e74c3c; color:white; border:none; border-radius:4px;">Delete</button>
                 </div>
             </div>
         `).join("");
@@ -567,20 +553,8 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    if (logoutBtn) {
-        logoutBtn.addEventListener("click", () => {
-            localStorage.removeItem("threadcraft_current_user");
-            window.location.href = "index.html";
-        });
-    }
-
     if (saveDesignBtn) {
         saveDesignBtn.addEventListener("click", () => {
-            if (!currentUser) {
-                askLogin("Please login first to save your design.");
-                return;
-            }
-
             const designs = getSavedDesigns();
             designs.push({
                 productType: currentProductType,
@@ -592,16 +566,14 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             localStorage.setItem(designsKey, JSON.stringify(designs));
             updateCartCount();
-            showToast("Design saved! Check your cart.");
+            alert("Success! Your custom design has been saved to your cart.");
+            renderSavedDesigns();
+            if (savedPanel) savedPanel.classList.remove("studio-hidden");
         });
     }
 
     if (loadDesignBtn) {
         loadDesignBtn.addEventListener("click", () => {
-            if (!currentUser) {
-                askLogin("Please login first to see your saved designs.");
-                return;
-            }
             renderSavedDesigns();
             savedPanel.classList.remove("studio-hidden");
         });
