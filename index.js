@@ -1,4 +1,12 @@
 document.addEventListener("DOMContentLoaded", () => {
+    const currentUser = JSON.parse(localStorage.getItem("threadcraft_current_user"));
+    const isCustomerPage = document.body.classList.contains("customer-page");
+
+    if (isCustomerPage && !currentUser) {
+        window.location.href = "index.html";
+        return;
+    }
+
     const catalogView = document.getElementById("product-catalog");
     const customizationStudio = document.getElementById("customization-studio");
     const selectButtons = document.querySelectorAll(".select-product-btn");
@@ -55,12 +63,29 @@ document.addEventListener("DOMContentLoaded", () => {
     const saveDesignBtn = document.getElementById("save-design");
     const loadDesignBtn = document.getElementById("load-design");
     const resetDesignBtn = document.getElementById("reset-design");
-    const savedPanel = document.getElementById("saved-panel");
+
+    let savedPanel = document.getElementById("saved-panel");
+    if (!savedPanel) {
+        savedPanel = document.createElement("div");
+        savedPanel.id = "saved-panel";
+        savedPanel.className = "studio-hidden";
+        savedPanel.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:1000;";
+        savedPanel.innerHTML = `
+            <div style="background:#FDFBF7; color:#1E232A; padding:30px; border-radius:12px; width:400px; max-height:80vh; overflow-y:auto; position:relative;">
+                <h3>Your Cart / Saved Designs</h3>
+                <div id="saved-list" style="margin-top:15px;"></div>
+                <button type="button" id="close-saved" style="margin-top:20px; padding:8px 16px; cursor:pointer;">Close</button>
+            </div>
+        `;
+        document.body.appendChild(savedPanel);
+    }
+
     const savedList = document.getElementById("saved-list");
     const closeSavedBtn = document.getElementById("close-saved");
-    const cartBtn = document.getElementById("cart-btn");
+    const cartBtn = document.getElementById("cart-btn") || document.querySelector(".cart-btn");
+    const logoutBtn = document.getElementById("logout-btn") || document.querySelector(".logout-btn");
 
-    const designsKey = "threadcraft_guest_cart";
+    const designsKey = currentUser ? `threadcraft_designs_${currentUser.email}` : "threadcraft_guest_cart";
 
     let drawingHistory = [];
     let isDrawing = false;
@@ -196,7 +221,7 @@ document.addEventListener("DOMContentLoaded", () => {
         viewData = {};
         const count = viewPaths[currentProductType].length;
         for (let i = 0; i < count; i++) {
-            viewData[i] = { text: '', position: 'center', y: 250, graphic: '' };
+            viewData[i] = { text: '', position: 'center', y: 250, graphic: '', graphicSrc: '' };
         }
     };
     initViewData();
@@ -236,8 +261,18 @@ document.addEventListener("DOMContentLoaded", () => {
         return views[currentIndex] || views[0];
     };
 
+    const resolveGraphicPath = (graphicType, savedSrc) => {
+        if (savedSrc) return savedSrc;
+        const matchingBtn = document.querySelector(`.graphic-option[data-graphic="${graphicType}"] img`);
+        if (matchingBtn) return matchingBtn.getAttribute("src");
+        if (graphicType === 'design_1') return 'image/graphic/graphic_design_1.png';
+        if (graphicType === 'design_2') return 'image/graphic/graphic_design_2.png';
+        if (graphicType === 'design_3') return 'image/graphic/Futuristic Sneakers.png';
+        return '';
+    };
+
     const syncUIWithCurrentView = () => {
-        const currentViewObj = viewData[currentIndex] || { text: '', position: 'center', y: 250, graphic: '' };
+        const currentViewObj = viewData[currentIndex] || { text: '', position: 'center', y: 250, graphic: '', graphicSrc: '' };
 
         if (customTextInput) {
             customTextInput.value = currentViewObj.text;
@@ -255,11 +290,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (graphicPreview) {
             if (currentViewObj.graphic) {
-                let path = '';
-                if (currentViewObj.graphic === 'design_1') path = 'image/graphic/graphic_design_1.png';
-                else if (currentViewObj.graphic === 'design_2') path = 'image/graphic/graphic_design_2.png';
-                else if (currentViewObj.graphic === 'design_3') path = 'image/graphic/Futuristic Sneakers.png';
-
+                const path = resolveGraphicPath(currentViewObj.graphic, currentViewObj.graphicSrc);
                 graphicPreview.setAttributeNS("http://www.w3.org/1999/xlink", "href", path);
                 graphicPreview.setAttribute("href", path);
             } else {
@@ -296,7 +327,7 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     const updateCartCount = () => {
-        const badge = document.getElementById("cart-count");
+        const badge = document.getElementById("cart-count") || (cartBtn ? cartBtn.querySelector("span") : null);
         if (badge) {
             badge.textContent = getSavedDesigns().length;
         }
@@ -370,7 +401,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (customTextInput) {
         customTextInput.addEventListener("input", (e) => {
             const textVal = e.target.value;
-            if (!viewData[currentIndex]) viewData[currentIndex] = { text: '', position: 'center', y: 250, graphic: '' };
+            if (!viewData[currentIndex]) viewData[currentIndex] = { text: '', position: 'center', y: 250, graphic: '', graphicSrc: '' };
             viewData[currentIndex].text = textVal;
             if (customTextPreview) customTextPreview.textContent = textVal;
             if (summaryText) summaryText.textContent = textVal.trim() === "" ? "None" : textVal;
@@ -381,7 +412,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (textPositionSelect && customTextPreview) {
         textPositionSelect.addEventListener("change", (e) => {
             const pos = e.target.value;
-            if (!viewData[currentIndex]) viewData[currentIndex] = { text: '', position: 'center', y: 250, graphic: '' };
+            if (!viewData[currentIndex]) viewData[currentIndex] = { text: '', position: 'center', y: 250, graphic: '', graphicSrc: '' };
             viewData[currentIndex].position = pos;
             let yVal = 250;
             if (pos === "top") yVal = 150;
@@ -396,8 +427,12 @@ document.addEventListener("DOMContentLoaded", () => {
         btn.addEventListener("click", () => {
             const graphicType = btn.getAttribute("data-graphic");
             if (graphicType) {
-                if (!viewData[currentIndex]) viewData[currentIndex] = { text: '', position: 'center', y: 250, graphic: '' };
+                const imgElem = btn.querySelector("img");
+                const path = imgElem ? imgElem.getAttribute("src") : resolveGraphicPath(graphicType, '');
+
+                if (!viewData[currentIndex]) viewData[currentIndex] = { text: '', position: 'center', y: 250, graphic: '', graphicSrc: '' };
                 viewData[currentIndex].graphic = graphicType;
+                viewData[currentIndex].graphicSrc = path;
                 
                 graphicButtons.forEach(b => {
                     b.classList.remove("active");
@@ -407,11 +442,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 btn.style.borderColor = "#E06D53";
 
                 if (graphicPreview) {
-                    let path = '';
-                    if (graphicType === 'design_1') path = 'image/graphic/graphic_design_1.png';
-                    else if (graphicType === 'design_2') path = 'image/graphic/graphic_design_2.png';
-                    else if (graphicType === 'design_3') path = 'image/graphic/Futuristic Sneakers.png';
-                    
                     graphicPreview.setAttributeNS("http://www.w3.org/1999/xlink", "href", path);
                     graphicPreview.setAttribute("href", path);
                 }
@@ -423,7 +453,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (removeGraphicBtn) {
         removeGraphicBtn.addEventListener("click", () => {
-            if (viewData[currentIndex]) viewData[currentIndex].graphic = '';
+            if (viewData[currentIndex]) {
+                viewData[currentIndex].graphic = '';
+                viewData[currentIndex].graphicSrc = '';
+            }
 
             graphicButtons.forEach(b => {
                 b.classList.remove("active");
@@ -516,8 +549,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     <p style="margin:4px 0; font-size:14px;">Size: ${d.size} | Color: ${d.color} | <strong>${d.price}</strong></p>
                 </div>
                 <div class="saved-item-actions">
-                    <button type="button" class="saved-open-btn" data-index="${index}" style="margin-right:4px; padding:4px 8px;">Open</button>
-                    <button type="button" class="saved-delete-btn" data-index="${index}" style="padding:4px 8px; background:#e74c3c; color:white; border:none; border-radius:4px;">Delete</button>
+                    <button type="button" class="saved-open-btn" data-index="${index}" style="margin-right:4px; padding:4px 8px; cursor:pointer;">Open</button>
+                    <button type="button" class="saved-delete-btn" data-index="${index}" style="padding:4px 8px; background:#e74c3c; color:white; border:none; border-radius:4px; cursor:pointer;">Delete</button>
                 </div>
             </div>
         `).join("");
@@ -553,6 +586,13 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", () => {
+            localStorage.removeItem("threadcraft_current_user");
+            window.location.href = "index.html";
+        });
+    }
+
     if (saveDesignBtn) {
         saveDesignBtn.addEventListener("click", () => {
             const designs = getSavedDesigns();
@@ -560,7 +600,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 productType: currentProductType,
                 size: currentSize,
                 color: currentColor,
-                price: totalPriceElem.textContent,
+                price: totalPriceElem ? totalPriceElem.textContent : "₱350.00",
                 viewData: viewData,
                 drawingData: drawingCanvas ? drawingCanvas.toDataURL() : null
             });
@@ -575,7 +615,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (loadDesignBtn) {
         loadDesignBtn.addEventListener("click", () => {
             renderSavedDesigns();
-            savedPanel.classList.remove("studio-hidden");
+            if (savedPanel) savedPanel.classList.remove("studio-hidden");
         });
     }
 
