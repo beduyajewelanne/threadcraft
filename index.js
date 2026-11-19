@@ -11,21 +11,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const customizationStudio = document.getElementById("customization-studio");
     const selectButtons = document.querySelectorAll(".select-product-btn");
     const backButton = document.getElementById("back-to-catalog");
-    const garmentBase = document.getElementById("garment-base");
-    
-    let garmentPattern = document.getElementById("garment-pattern");
-    if (!garmentPattern) {
-        garmentPattern = document.createElementNS("http://www.w3.org/2000/svg", "image");
-        garmentPattern.id = "garment-pattern";
-        garmentPattern.setAttribute("x", "0");
-        garmentPattern.setAttribute("y", "0");
-        garmentPattern.setAttribute("width", "400");
-        garmentPattern.setAttribute("height", "500");
-        garmentPattern.setAttribute("preserveAspectRatio", "xMidYMid meet");
-        garmentPattern.style.display = "none";
-        
-        const designLayer = document.getElementById("design-layer");
-        if (designLayer) designLayer.insertBefore(garmentPattern, designLayer.firstChild);
+    const garmentContainer = document.getElementById("garment-container") || document.querySelector(".studio-preview-area");
+
+    let modelViewer = document.getElementById("garment-3d-model");
+    if (!modelViewer && garmentContainer) {
+        modelViewer = document.createElement("model-viewer");
+        modelViewer.id = "garment-3d-model";
+        modelViewer.setAttribute("camera-controls", "");
+        modelViewer.setAttribute("auto-rotate", "");
+        modelViewer.setAttribute("interaction-prompt", "auto");
+        modelViewer.style.width = "100%";
+        modelViewer.style.height = "100%";
+        modelViewer.style.minHeight = "400px";
+        modelViewer.style.backgroundColor = "transparent";
+        garmentContainer.appendChild(modelViewer);
     }
     
     const currentPriceElem = document.getElementById("current-price");
@@ -48,11 +47,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const colorButtons = document.querySelectorAll(".color-option");
     const customTextInput = document.getElementById("custom-text");
     const textPositionSelect = document.getElementById("text-position");
-    const customTextPreview = document.getElementById("custom-text-preview");
     const graphicButtons = document.querySelectorAll(".graphic-option");
     const removeGraphicBtn = document.getElementById("remove-graphic");
-    const graphicPreview = document.getElementById("graphic-preview");
-    const drawingPreview = document.getElementById("drawing-preview");
 
     const drawingCanvas = document.getElementById("drawing-canvas");
     const drawingCtx = drawingCanvas ? drawingCanvas.getContext("2d") : null;
@@ -60,28 +56,32 @@ document.addEventListener("DOMContentLoaded", () => {
     const clearDrawingBtn = document.getElementById("clear-drawing");
     const undoDrawingBtn = document.getElementById("undo-drawing");
 
+    let overlayContainer = document.getElementById("model-overlay-container");
+    if (!overlayContainer && garmentContainer) {
+        garmentContainer.style.position = "relative";
+        overlayContainer = document.createElement("div");
+        overlayContainer.id = "model-overlay-container";
+        overlayContainer.style.cssText = "position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:180px; height:240px; pointer-events:none; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:10; text-align:center;";
+        
+        overlayContainer.innerHTML = `
+            <div id="overlay-text" style="position:absolute; width:100%; font-weight:bold; font-size:16px; color:#1E232A; text-shadow:0 1px 2px rgba(255,255,255,0.9); word-break:break-all; top:50%; transform:translateY(-50%); transition: top 0.2s ease;"></div>
+            <img id="overlay-graphic" src="" style="max-width:90px; max-height:90px; object-fit:contain; display:none; position:absolute; top:40%; transform:translateY(-50%);" />
+            <img id="overlay-drawing" src="" style="max-width:90px; max-height:90px; object-fit:contain; display:none; position:absolute; top:65%; transform:translateY(-50%);" />
+        `;
+        garmentContainer.appendChild(overlayContainer);
+    }
+
+    const overlayText = document.getElementById("overlay-text");
+    const overlayGraphic = document.getElementById("overlay-graphic");
+    const overlayDrawing = document.getElementById("overlay-drawing");
+
     const saveDesignBtn = document.getElementById("save-design");
     const loadDesignBtn = document.getElementById("load-design");
     const resetDesignBtn = document.getElementById("reset-design");
 
-    let savedPanel = document.getElementById("saved-panel");
-    if (!savedPanel) {
-        savedPanel = document.createElement("div");
-        savedPanel.id = "saved-panel";
-        savedPanel.className = "studio-hidden";
-        savedPanel.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:1000;";
-        savedPanel.innerHTML = `
-            <div style="background:#FDFBF7; color:#1E232A; padding:30px; border-radius:12px; width:400px; max-height:80vh; overflow-y:auto; position:relative;">
-                <h3>Your Cart / Saved Designs</h3>
-                <div id="saved-list" style="margin-top:15px;"></div>
-                <button type="button" id="close-saved" style="margin-top:20px; padding:8px 16px; cursor:pointer;">Close</button>
-            </div>
-        `;
-        document.body.appendChild(savedPanel);
-    }
-
-    const savedList = document.getElementById("saved-list");
-    const closeSavedBtn = document.getElementById("close-saved");
+    let savedPanel = document.getElementById("saved-panel") || document.getElementById("saved-designs-panel");
+    const savedList = document.getElementById("saved-list") || document.getElementById("saved-designs-list");
+    const closeSavedBtn = document.getElementById("close-saved") || document.getElementById("close-saved-panel");
     const cartBtn = document.getElementById("cart-btn") || document.querySelector(".cart-btn");
     const logoutBtn = document.getElementById("logout-btn") || document.querySelector(".logout-btn");
 
@@ -96,17 +96,29 @@ document.addEventListener("DOMContentLoaded", () => {
         drawingHistory.push(drawingCtx.getImageData(0, 0, drawingCanvas.width, drawingCanvas.height));
     };
 
-    const syncDrawingToGarment = () => {
-        if (!drawingCanvas || !drawingPreview) return;
+    const syncDrawingToOverlay = () => {
+        if (!drawingCanvas || !overlayDrawing) return;
         const dataURL = drawingCanvas.toDataURL("image/png");
-        drawingPreview.setAttributeNS("http://www.w3.org/1999/xlink", "href", dataURL);
-        drawingPreview.setAttribute("href", dataURL);
+        const isEmpty = isCanvasBlank(drawingCanvas);
+        if (isEmpty) {
+            overlayDrawing.style.display = "none";
+            overlayDrawing.src = "";
+        } else {
+            overlayDrawing.style.display = "block";
+            overlayDrawing.src = dataURL;
+        }
+    };
+
+    const isCanvasBlank = (canvas) => {
+        const blank = document.createElement('canvas');
+        blank.width = canvas.width;
+        blank.height = canvas.height;
+        return canvas.toDataURL() === blank.toDataURL();
     };
 
     if (drawingCanvas && drawingCtx) {
-        drawingCanvas.width = drawingCanvas.offsetWidth || 350;
-        drawingCanvas.height = 180;
-
+        drawingCanvas.width = 350;
+        drawingCanvas.height = 200;
         drawingCtx.lineCap = "round";
         drawingCtx.lineJoin = "round";
         saveDrawingState();
@@ -142,7 +154,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (isDrawing) {
                 isDrawing = false;
                 saveDrawingState();
-                syncDrawingToGarment();
+                syncDrawingToOverlay();
             }
         };
 
@@ -159,7 +171,7 @@ document.addEventListener("DOMContentLoaded", () => {
             clearDrawingBtn.addEventListener("click", () => {
                 drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
                 saveDrawingState();
-                syncDrawingToGarment();
+                syncDrawingToOverlay();
             });
         }
 
@@ -173,7 +185,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
                     saveDrawingState();
                 }
-                syncDrawingToGarment();
+                syncDrawingToOverlay();
             });
         }
     }
@@ -182,140 +194,87 @@ document.addEventListener("DOMContentLoaded", () => {
     const sizePrices = { S: 0.00, M: 15.00, L: 25.00, XL: 30.00, "2XL": 50.00 };
     const colorPrices = { white: 0.00, black: 0.00, red: 15.00, blue: 15.00, green: 15.00, yellow: 20.00, purple: 20.00 };
 
-    const colorFilters = {
-        white: "brightness(1) saturate(1)",
-        black: "brightness(0.15) grayscale(100%)",
-        red: "brightness(0.8) sepia(1) hue-rotate(310deg) saturate(7)",
-        blue: "brightness(0.8) sepia(1) hue-rotate(170deg) saturate(6)",
-        green: "brightness(0.8) sepia(1) hue-rotate(75deg) saturate(6)",
-        yellow: "brightness(1.1) sepia(1) hue-rotate(10deg) saturate(7)",
-        purple: "brightness(0.75) sepia(1) hue-rotate(240deg) saturate(6)"
-    };
-
-    const viewPaths = {
-        tshirt: [
-            'image/white t-shirt/white_t-shirt_front.png',
-            'image/white t-shirt/white_t-shirt_right.png',
-            'image/white t-shirt/white_t-shirt_back.png',
-            'image/white t-shirt/white_t-shirt_left.png'
-        ],
-        hoodie: [
-            'image/white hoodie/white_hoodie_front.png',
-            'image/white hoodie/white_hoodie_front_right.png',
-            'image/white hoodie/white_hoodie_right.png',
-            'image/white hoodie/white_hoodie_back_right.png',
-            'image/white hoodie/white_hoodie_back.png',
-            'image/white hoodie/white_hoodie_back_left.png',
-            'image/white hoodie/white_hoodie_left.png',
-            'image/white hoodie/white_hoodie_front_left.png'
-        ]
+    const modelPaths = {
+        tshirt: "3d model t-shirt/base_basic_shaded.glb",
+        hoodie: "3d model hoodie/base_basic_shaded.glb"
     };
 
     let currentProductType = 'tshirt';
-    let currentIndex = 0;
     let currentSize = 'S';
     let currentColor = 'white';
-    
-    let viewData = {};
-    const initViewData = () => {
-        viewData = {};
-        const count = viewPaths[currentProductType].length;
-        for (let i = 0; i < count; i++) {
-            viewData[i] = { text: '', position: 'center', y: 250, graphic: '', graphicSrc: '' };
-        }
-    };
-    initViewData();
+    let currentCustomization = { text: '', position: 'center', graphic: '', graphicSrc: '' };
 
     const updatePriceDisplay = () => {
         const base = prices[currentProductType] || 350;
         const sizeAddon = sizePrices[currentSize] || 0;
         const colorAddon = colorPrices[currentColor] || 0;
         
-        let totalTextCharCount = Object.values(viewData).reduce((sum, v) => sum + (v.text ? v.text.trim().length : 0), 0);
-        const textAddon = totalTextCharCount > 0 ? 50.00 : 0.00;
-
-        let hasAnyGraphic = Object.values(viewData).some(v => v.graphic !== '');
-        const graphicAddon = hasAnyGraphic ? 75.00 : 0.00;
+        let textAddon = currentCustomization.text && currentCustomization.text.trim().length > 0 ? 50.00 : 0.00;
+        let graphicAddon = currentCustomization.graphic ? 75.00 : 0.00;
 
         const total = base + sizeAddon + colorAddon + textAddon + graphicAddon;
 
-        const formattedTotal = `₱${total.toFixed(2)}`;
-        const formattedBase = `₱${base.toFixed(2)}`;
-        const formattedSize = `₱${sizeAddon.toFixed(2)}`;
-        const formattedColor = `₱${colorAddon.toFixed(2)}`;
-        const formattedText = `₱${textAddon.toFixed(2)}`;
-        const formattedGraphic = `₱${graphicAddon.toFixed(2)}`;
-
-        if (currentPriceElem) currentPriceElem.textContent = formattedTotal;
-        if (basePriceElem) basePriceElem.textContent = formattedBase;
-        if (sizePriceElem) sizePriceElem.textContent = formattedSize;
-        if (colorPriceElem) colorPriceElem.textContent = formattedColor;
-        if (textPriceElem) textPriceElem.textContent = formattedText;
-        if (graphicPriceElem) graphicPriceElem.textContent = formattedGraphic;
-        if (totalPriceElem) totalPriceElem.textContent = formattedTotal;
-        if (summaryPrice) summaryPrice.textContent = formattedTotal;
-    };
-
-    const getGarmentImagePath = () => {
-        const views = viewPaths[currentProductType] || viewPaths['tshirt'];
-        return views[currentIndex] || views[0];
-    };
-
-    const resolveGraphicPath = (graphicType, savedSrc) => {
-        if (savedSrc) return savedSrc;
-        const matchingBtn = document.querySelector(`.graphic-option[data-graphic="${graphicType}"] img`);
-        if (matchingBtn) return matchingBtn.getAttribute("src");
-        if (graphicType === 'design_1') return 'image/graphic/graphic_design_1.png';
-        if (graphicType === 'design_2') return 'image/graphic/graphic_design_2.png';
-        if (graphicType === 'design_3') return 'image/graphic/Futuristic Sneakers.png';
-        return '';
-    };
-
-    const syncUIWithCurrentView = () => {
-        const currentViewObj = viewData[currentIndex] || { text: '', position: 'center', y: 250, graphic: '', graphicSrc: '' };
-
-        if (customTextInput) {
-            customTextInput.value = currentViewObj.text;
-        }
-        if (customTextPreview) {
-            customTextPreview.textContent = currentViewObj.text;
-            customTextPreview.setAttribute("y", currentViewObj.y);
-        }
-        if (textPositionSelect) {
-            textPositionSelect.value = currentViewObj.position;
-        }
-        if (summaryText) {
-            summaryText.textContent = !currentViewObj.text || currentViewObj.text.trim() === "" ? "None" : currentViewObj.text;
-        }
-
-        if (graphicPreview) {
-            if (currentViewObj.graphic) {
-                const path = resolveGraphicPath(currentViewObj.graphic, currentViewObj.graphicSrc);
-                graphicPreview.setAttributeNS("http://www.w3.org/1999/xlink", "href", path);
-                graphicPreview.setAttribute("href", path);
-            } else {
-                graphicPreview.setAttributeNS("http://www.w3.org/1999/xlink", "href", "");
-                graphicPreview.removeAttribute("href");
-            }
-        }
-        if (summaryGraphic) {
-            summaryGraphic.textContent = currentViewObj.graphic ? `Design ${currentViewObj.graphic.replace('design_', '')}` : "None";
-        }
+        if (currentPriceElem) currentPriceElem.textContent = `₱${total.toFixed(2)}`;
+        if (basePriceElem) basePriceElem.textContent = `₱${base.toFixed(2)}`;
+        if (sizePriceElem) sizePriceElem.textContent = `₱${sizeAddon.toFixed(2)}`;
+        if (colorPriceElem) colorPriceElem.textContent = `₱${colorAddon.toFixed(2)}`;
+        if (textPriceElem) textPriceElem.textContent = `₱${textAddon.toFixed(2)}`;
+        if (graphicPriceElem) graphicPriceElem.textContent = `₱${graphicPriceElem.textContent = `₱${graphicAddon.toFixed(2)}`}`;
+        if (totalPriceElem) totalPriceElem.textContent = `₱${total.toFixed(2)}`;
+        if (summaryPrice) summaryPrice.textContent = `₱${total.toFixed(2)}`;
     };
 
     const applyGarmentStyles = () => {
-        if (garmentBase) {
-            const imagePath = getGarmentImagePath();
-            garmentBase.setAttributeNS("http://www.w3.org/1999/xlink", "href", imagePath);
-            garmentBase.setAttribute("href", imagePath);
-            garmentBase.style.filter = colorFilters[currentColor] || colorFilters['white'];
+    if (modelViewer) {
+        const modelSrc = modelPaths[currentProductType] || modelPaths['tshirt'];
+        modelViewer.setAttribute("src", modelSrc);
+
+        const colorFiltersMap = {
+            white: "brightness(1) saturate(1)",
+            black: "brightness(0.25) grayscale(100%)",
+            red: "brightness(0.25) sepia(1) hue-rotate(310deg) saturate(7)",
+            blue: "brightness(0.25) sepia(1) hue-rotate(170deg) saturate(6)",
+            green: "brightness(0.25) sepia(1) hue-rotate(75deg) saturate(6)",
+            yellow: "brightness(0.25) sepia(1) hue-rotate(10deg) saturate(7)",
+            purple: "brightness(0.25) sepia(1) hue-rotate(240deg) saturate(6)"
+        };
+
+        modelViewer.style.filter = colorFiltersMap[currentColor] || "none";
+    }
+
+    syncUIWithCurrentView();
+};
+
+    const syncUIWithCurrentView = () => {
+        if (customTextInput) customTextInput.value = currentCustomization.text;
+        
+        if (overlayText) {
+            overlayText.textContent = currentCustomization.text;
         }
 
-        if (garmentPattern) {
-            garmentPattern.style.display = "none";
+        if (textPositionSelect && overlayText) {
+            currentCustomization.position = textPositionSelect.value;
+            if (currentCustomization.position === 'top') {
+                overlayText.style.top = "20%";
+            } else if (currentCustomization.position === 'bottom') {
+                overlayText.style.top = "80%";
+            } else {
+                overlayText.style.top = "50%";
+            }
         }
 
-        syncUIWithCurrentView();
+        if (overlayGraphic) {
+            if (currentCustomization.graphic && currentCustomization.graphicSrc) {
+                overlayGraphic.style.display = "block";
+                overlayGraphic.src = currentCustomization.graphicSrc;
+            } else {
+                overlayGraphic.style.display = "none";
+                overlayGraphic.src = "";
+            }
+        }
+
+        if (summaryText) summaryText.textContent = !currentCustomization.text || currentCustomization.text.trim() === "" ? "None" : currentCustomization.text;
+        if (summaryGraphic) summaryGraphic.textContent = currentCustomization.graphic ? `Design ${currentCustomization.graphic.replace('design_', '')}` : "None";
     };
 
     const getSavedDesigns = () => {
@@ -328,9 +287,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const updateCartCount = () => {
         const badge = document.getElementById("cart-count") || (cartBtn ? cartBtn.querySelector("span") : null);
-        if (badge) {
-            badge.textContent = getSavedDesigns().length;
-        }
+        if (badge) badge.textContent = getSavedDesigns().length;
     };
 
     const showToast = (message) => {
@@ -353,9 +310,7 @@ document.addEventListener("DOMContentLoaded", () => {
     selectButtons.forEach(btn => {
         btn.addEventListener("click", () => {
             currentProductType = btn.getAttribute("data-type");
-            currentIndex = 0;
-            initViewData();
-
+            
             if (catalogView) catalogView.classList.add("studio-hidden");
             if (customizationStudio) customizationStudio.classList.remove("studio-hidden");
 
@@ -377,10 +332,6 @@ document.addEventListener("DOMContentLoaded", () => {
             targetBtn.classList.add("active");
 
             if (summarySize) summarySize.textContent = currentSize;
-
-            const hiddenSizeInput = document.getElementById("selected-size");
-            if (hiddenSizeInput) hiddenSizeInput.value = currentSize;
-
             updatePriceDisplay();
         });
     });
@@ -400,26 +351,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (customTextInput) {
         customTextInput.addEventListener("input", (e) => {
-            const textVal = e.target.value;
-            if (!viewData[currentIndex]) viewData[currentIndex] = { text: '', position: 'center', y: 250, graphic: '', graphicSrc: '' };
-            viewData[currentIndex].text = textVal;
-            if (customTextPreview) customTextPreview.textContent = textVal;
-            if (summaryText) summaryText.textContent = textVal.trim() === "" ? "None" : textVal;
+            currentCustomization.text = e.target.value;
+            syncUIWithCurrentView();
             updatePriceDisplay();
         });
     }
 
-    if (textPositionSelect && customTextPreview) {
+    if (textPositionSelect) {
         textPositionSelect.addEventListener("change", (e) => {
-            const pos = e.target.value;
-            if (!viewData[currentIndex]) viewData[currentIndex] = { text: '', position: 'center', y: 250, graphic: '', graphicSrc: '' };
-            viewData[currentIndex].position = pos;
-            let yVal = 250;
-            if (pos === "top") yVal = 150;
-            else if (pos === "bottom") yVal = 350;
-            
-            viewData[currentIndex].y = yVal;
-            customTextPreview.setAttribute("y", yVal);
+            currentCustomization.position = e.target.value;
+            syncUIWithCurrentView();
         });
     }
 
@@ -428,11 +369,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const graphicType = btn.getAttribute("data-graphic");
             if (graphicType) {
                 const imgElem = btn.querySelector("img");
-                const path = imgElem ? imgElem.getAttribute("src") : resolveGraphicPath(graphicType, '');
+                const path = imgElem ? imgElem.getAttribute("src") : '';
 
-                if (!viewData[currentIndex]) viewData[currentIndex] = { text: '', position: 'center', y: 250, graphic: '', graphicSrc: '' };
-                viewData[currentIndex].graphic = graphicType;
-                viewData[currentIndex].graphicSrc = path;
+                currentCustomization.graphic = graphicType;
+                currentCustomization.graphicSrc = path;
                 
                 graphicButtons.forEach(b => {
                     b.classList.remove("active");
@@ -441,11 +381,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 btn.classList.add("active");
                 btn.style.borderColor = "#E06D53";
 
-                if (graphicPreview) {
-                    graphicPreview.setAttributeNS("http://www.w3.org/1999/xlink", "href", path);
-                    graphicPreview.setAttribute("href", path);
-                }
-                if (summaryGraphic) summaryGraphic.textContent = `Design ${graphicType.replace('design_', '')}`;
+                syncUIWithCurrentView();
                 updatePriceDisplay();
             }
         });
@@ -453,30 +389,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (removeGraphicBtn) {
         removeGraphicBtn.addEventListener("click", () => {
-            if (viewData[currentIndex]) {
-                viewData[currentIndex].graphic = '';
-                viewData[currentIndex].graphicSrc = '';
-            }
+            currentCustomization.graphic = '';
+            currentCustomization.graphicSrc = '';
 
             graphicButtons.forEach(b => {
                 b.classList.remove("active");
                 b.style.borderColor = "transparent";
             });
 
-            if (graphicPreview) {
-                graphicPreview.setAttributeNS("http://www.w3.org/1999/xlink", "href", "");
-                graphicPreview.removeAttribute("href");
-            }
-            if (summaryGraphic) summaryGraphic.textContent = "None";
+            syncUIWithCurrentView();
             updatePriceDisplay();
         });
     }
 
-    if (rotateBtn) {
+    if (rotateBtn && modelViewer) {
         rotateBtn.addEventListener('click', () => {
-            const views = viewPaths[currentProductType] || viewPaths['tshirt'];
-            currentIndex = (currentIndex + 1) % views.length;
-            applyGarmentStyles();
+            const isAutoRotating = modelViewer.hasAttribute("auto-rotate");
+            if (isAutoRotating) {
+                modelViewer.removeAttribute("auto-rotate");
+                showToast("Auto-rotate disabled. You can now freely drag to inspect.");
+            } else {
+                modelViewer.setAttribute("auto-rotate", "");
+                showToast("Auto-rotate enabled.");
+            }
         });
     }
 
@@ -495,7 +430,7 @@ document.addEventListener("DOMContentLoaded", () => {
         currentProductType = state.productType;
         currentSize = state.size;
         currentColor = state.color;
-        viewData = state.viewData;
+        currentCustomization = state.customization || { text: '', position: 'center', graphic: '', graphicSrc: '' };
 
         sizeButtons.forEach(b => {
             if (b.getAttribute("data-size") === currentSize) b.classList.add("active");
@@ -514,12 +449,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 img.onload = () => {
                     drawingCtx.drawImage(img, 0, 0);
                     saveDrawingState();
-                    syncDrawingToGarment();
+                    syncDrawingToOverlay();
                 };
                 img.src = state.drawingData;
             } else {
                 saveDrawingState();
-                syncDrawingToGarment();
+                syncDrawingToOverlay();
             }
         }
 
@@ -527,7 +462,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (customizationStudio) customizationStudio.classList.remove("studio-hidden");
         if (savedPanel) savedPanel.classList.add("studio-hidden");
 
-        currentIndex = 0;
         applyGarmentStyles();
         updatePriceDisplay();
         showToast("Design loaded.");
@@ -601,7 +535,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 size: currentSize,
                 color: currentColor,
                 price: totalPriceElem ? totalPriceElem.textContent : "₱350.00",
-                viewData: viewData,
+                customization: currentCustomization,
                 drawingData: drawingCanvas ? drawingCanvas.toDataURL() : null
             });
             localStorage.setItem(designsKey, JSON.stringify(designs));
@@ -625,13 +559,12 @@ document.addEventListener("DOMContentLoaded", () => {
         resetDesignBtn.addEventListener("click", () => {
             currentSize = 'S';
             currentColor = 'white';
-            currentIndex = 0;
-            initViewData();
+            currentCustomization = { text: '', position: 'center', graphic: '', graphicSrc: '' };
 
             if (drawingCanvas && drawingCtx) {
                 drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
                 saveDrawingState();
-                syncDrawingToGarment();
+                syncDrawingToOverlay();
             }
 
             sizeButtons.forEach((b, idx) => {
@@ -655,5 +588,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    applyGarmentStyles();
     updatePriceDisplay();
 });

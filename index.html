@@ -73,18 +73,10 @@
 
                 <div id="garment-viewer">
                     <div id="garment-stage">
-                        <svg id="garment-svg" width="350" height="420" viewBox="0 0 400 500" role="img" aria-label="Custom apparel preview">
-                            <image id="garment-base" href="image/white t-shirt/white_t-shirt_front.png" x="0" y="0" width="400" height="500" preserveAspectRatio="xMidYMid meet"></image>
-                            <g id="design-layer">
-                                <text id="custom-text-preview" x="200" y="250" text-anchor="middle"> </text>
-                                <image id="graphic-preview" x="125" y="175" width="150" height="150"> </image>
-                                <image id="drawing-preview" x="100" y="150" width="200" height="200" preserveAspectRatio="xMidYMid meet"></image>
-                            </g>
-                        </svg>
-                        <canvas id="drawing-overlay" width="350" height="420"> </canvas>
+                        <div id="garment-container" style="width: 100%; height: 450px; display: flex; justify-content: center; align-items: center; position: relative;"></div>
                         
                         <div id="rotation-controls">
-                            <button type="button" id="rotate-btn" title="Rotate View">
+                            <button type="button" id="rotate-btn" title="Toggle Auto-Rotate">
                                 <img src="image/arrow.png" alt="Rotate" width="28" height="28">
                             </button>
                         </div>
@@ -205,5 +197,6 @@
         <p>ThreadCraft uses interactive visual controls to make apparel customization easier and more accessible.</p>
     </footer>
 </body>
+<script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
 <script src="index.js"></script>
 </html>
